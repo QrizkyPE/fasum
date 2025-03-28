@@ -113,11 +113,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: const Text('Sign Up'),
         centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
+        
         child: Center(
           child: SingleChildScrollView(
             child: Form(
@@ -126,7 +127,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App logo or icon could go here
+                  // Icon
                   const Icon(
                     Icons.person_add,
                     size: 80,
@@ -136,7 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   
                   // Title
                   const Text(
-                    'Join Us Today',
+                    'Let us get started!',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -145,40 +146,40 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Error message if any
-                  if (_errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(color: Colors.red.shade900),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                  // Error message 
+                  // if (_errorMessage != null)
+                  //   Container(
+                  //     padding: const EdgeInsets.all(8),
+                  //     margin: const EdgeInsets.only(bottom: 16),
+                  //     decoration: BoxDecoration(
+                  //       color: Colors.red.shade100,
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //     child: Text(
+                  //       _errorMessage!,
+                  //       style: TextStyle(color: Colors.red.shade900),
+                  //       textAlign: TextAlign.center,
+                  //     ),
+                  //   ),
                   
                   // Name field
-                  TextFormField(
-                    controller: _nameController,
-                    keyboardType: TextInputType.name,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your name';
-                      }
-                      return null;
-                    },
-                    enabled: !_isLoading,
-                  ),
+                  // TextFormField(
+                  //   controller: _nameController,
+                  //   keyboardType: TextInputType.name,
+                  //   textCapitalization: TextCapitalization.words,
+                  //   decoration: const InputDecoration(
+                  //     labelText: 'Full Name',
+                  //     prefixIcon: Icon(Icons.person),
+                  //     border: OutlineInputBorder(),
+                  //   ),
+                  //   validator: (value) {
+                  //     if (value == null || value.trim().isEmpty) {
+                  //       return 'Please enter your name';
+                  //     }
+                  //     return null;
+                  //   },
+                  //   enabled: !_isLoading,
+                  // ),
                   const SizedBox(height: 16),
                   
                   // Email field

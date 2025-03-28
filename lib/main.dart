@@ -15,7 +15,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Initialize Firebase Realtime Database - without persistence for now
+  // Initialize Firebase Realtime Database - without persistence 
   // FirebaseDatabase.instance.setPersistenceEnabled(true);
   
   runApp(const MyApp());
@@ -69,7 +69,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _checkCurrentUser() async {
     try {
-      // Add a small delay to ensure Firebase is fully initialized
+      // Small delay to ensure Firebase is fully initialized
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Debug print to check auth state
@@ -141,7 +141,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 }
 
-// Error handler wrapper for the app
+// Error handler
 class AppErrorHandler extends StatelessWidget {
   final Widget child;
   

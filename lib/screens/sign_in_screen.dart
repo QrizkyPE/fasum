@@ -34,7 +34,7 @@ class _SignInScreenState extends State<SignInScreen> {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      _auth = FirebaseAuth.instance;
+    _auth = FirebaseAuth.instance;
       _database = FirebaseDatabase.instance;
       
       // Disabled for troubleshooting
@@ -123,40 +123,40 @@ class _SignInScreenState extends State<SignInScreen> {
       appBar: AppBar(
         title: const Text('Sign In'),
         centerTitle: true,
-        actions: [
-          // Debug button to show diagnostics
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Debug Info'),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Auth initialized: ${_auth != null}'),
-                        Text('Database initialized: ${_database != null}'),
-                        Text('Current user: ${_auth.currentUser?.uid ?? "None"}'),
-                        const Divider(),
-                        Text('Firebase options: ${DefaultFirebaseOptions.currentPlatform.projectId}'),
-                        Text('DB URL: ${DefaultFirebaseOptions.currentPlatform.databaseURL}'),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+        // actions: [
+        //   // Debug button to show diagnostics
+        //   IconButton(
+        //     icon: const Icon(Icons.info_outline),
+        //     onPressed: () {
+        //       showDialog(
+        //         context: context,
+        //         builder: (context) => AlertDialog(
+        //           title: const Text('Debug Info'),
+        //           content: SingleChildScrollView(
+        //             child: Column(
+        //               crossAxisAlignment: CrossAxisAlignment.start,
+        //               mainAxisSize: MainAxisSize.min,
+        //               children: [
+        //                 Text('Auth initialized: ${_auth != null}'),
+        //                 Text('Database initialized: ${_database != null}'),
+        //                 Text('Current user: ${_auth.currentUser?.uid ?? "None"}'),
+        //                 const Divider(),
+        //                 Text('Firebase options: ${DefaultFirebaseOptions.currentPlatform.projectId}'),
+        //                 Text('DB URL: ${DefaultFirebaseOptions.currentPlatform.databaseURL}'),
+        //               ],
+        //             ),
+        //           ),
+        //           actions: [
+        //             TextButton(
+        //               onPressed: () => Navigator.pop(context),
+        //               child: const Text('Close'),
+        //             ),
+        //           ],
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -294,7 +294,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       const Text("Don't have an account?"),
                       TextButton(
                         onPressed: _isLoading ? null : () {
-                          Navigator.pushNamed(context, '/signup');
+                          Navigator.pushReplacementNamed(context, '/signup');
                         },
                         child: const Text('Sign Up'),
                       ),

@@ -159,7 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
             final posts =
                 snapshot.data!.docs.where((doc) {
                   final data = doc.data();
-                  final category = data['category'] ?? 'Lainnya';
+                  final category =
+                      data['aiCategory'] ?? data['category'] ?? 'Lainnya';
                   return selectedCategory == null ||
                       selectedCategory == category;
                 }).toList();
@@ -179,7 +180,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 final fullName = data['fullName'] ?? 'Anonim';
                 final latitude = data['latitude'];
                 final longitude = data['longitude'];
-                final category = data['category'] ?? 'Lainnya';
+                final category =
+                    data['aiCategory'] ?? data['category'] ?? 'Lainnya';
                 final createdAt = DateTime.parse(createdAtStr);
                 String heroTag =
                     'fasum-image-${createdAt.millisecondsSinceEpoch}';

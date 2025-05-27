@@ -3,11 +3,12 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+// import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:http/http.dart' as http;
 
 // import 'package:firebase_auth/firebase_auth.dart'
@@ -50,6 +51,35 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
+  Future<void> sendNotificationToTopic(String body, String senderName) async {
+    final url = Uri.parse('https://fasum-cloud-steel.vercel.app/send-to-topic');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "topic": "berita-fasum",
+        "title": "🔔 Laporan Baru",
+        "body": body,
+        "senderName": senderName,
+        "senderPhotoUrl": "-",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ Notifikasi berhasil dikirim')),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Gagal kirim notifikasi: ${response.body}')),
+        );
+      }
+    }
+  }
+
   Future<void> _compressAndEncodeImage() async {
     if (_image == null) return;
     try {
@@ -77,7 +107,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
       final imageBytes = await _image!.readAsBytes();
       final base64Image = base64Encode(imageBytes);
       const apiKey =
-          'AIzaSyBfQEqac8FUOtyYEVTecV12jYHrqC0pFt8'; // ganti dengan API key kamu
+          'AIzaSyAXufE1OQFS9qxn1Oh2gVcNPYaqEGRq2FM'; // ganti dengan API key kamu
       const url =
           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey';
       final body = jsonEncode({
@@ -98,8 +128,8 @@ class _AddPostScreenState extends State<AddPostScreen> {
                     "Buat deskripsi singkat untuk laporan perbaikan, dan tambahkan permohonan perbaikan. "
                     "Fokus pada kerusakan yang terlihat dan hindari spekulasi.\n\n"
                     "Format output yang diinginkan:\n"
-                    "Kategori: [satu kategori yang dipilih]\n"
-                    "Deskripsi: [deskripsi singkat]",
+                    "kategori: [satu kategori yang dipilih]\n"
+                    "deskripsi: [deskripsi singkat]",
               },
             ],
           },
@@ -127,9 +157,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
             } else if (lower.startsWith('deskripsi:')) {
               description = line.substring(10).trim();
             }
-            // else if (lower.startsWith('keterangan:')) {
-            //   description = line.substring(11).trim();
-            // }
           }
           description ??= text.trim();
           setState(() {
@@ -145,6 +172,87 @@ class _AddPostScreenState extends State<AddPostScreen> {
       debugPrint('Failed to generate AI description: $e');
     } finally {
       if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  Future<void> _getLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location services are disabled.')),
+        );
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.deniedForever ||
+            permission == LocationPermission.denied) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permissions are denied.')),
+          );
+          return;
+        }
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      ).timeout(const Duration(seconds: 10));
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+      });
+    } catch (e) {
+      debugPrint('Failed to retrieve location: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to retrieve location: $e')),
+      );
+      setState(() {
+        _latitude = null;
+        _longitude = null;
+      });
+    }
+  }
+
+  Future<void> _submitPost() async {
+    if (_base64Image == null || _descriptionController.text.isEmpty) return;
+    setState(() => _isUploading = true);
+    final now = DateTime.now().toIso8601String();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Pengguna Tidak Ditemukan')));
+      return;
+    }
+    try {
+      await _getLocation();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final fullName = userDoc.data()?['fullName'] ?? 'Tanpa Nama';
+      await FirebaseFirestore.instance.collection('posts').add({
+        'image': _base64Image,
+        'Category': _aiCategory,
+        'description': _descriptionController.text,
+        'createdAt': now,
+        'latitude': _latitude,
+        'longitude': _longitude,
+        'fullName': fullName,
+        'userId': uid,
+      });
+      if (!mounted) return;
+      sendNotificationToTopic(_descriptionController.text, fullName);
+      Navigator.pop(context);
+    } catch (e) {
+      debugPrint('Upload Failed : $e');
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal Mengunggah Postingan')));
     }
   }
 
@@ -183,79 +291,19 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 
-  Future<void> _getLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.deniedForever ||
-          permission == LocationPermission.denied) {
-        throw Exception('Location permissions are denied');
-      }
-
-      try {
-        final position = await Geolocator.getCurrentPosition(
-          locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
-        ).timeout(const Duration(seconds: 10));
-        setState(() {
-          _latitude = position.latitude;
-          _longitude = position.longitude;
-        });
-      } catch (e) {
-        debugPrint('Gagal mendapatkan lokasi: $e');
-        setState(() {
-          _latitude = null;
-          _longitude = null;
-        });
-      }
-    }
-  }
-
-  Future<void> _SubmitPost() async {
-    if (_base64Image == null || _descriptionController.text.isEmpty) return;
-    setState(() => _isUploading = true);
-    final now = DateTime.now().toIso8601String();
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    if (uid == null) {
-      setState(() => _isUploading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Pengguna tidak ditemukan.')));
-      return;
-    }
-    try {
-      await _getLocation();
-      // Ambil nama lengkap dari koleksi users
-      final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final fullName = userDoc.data()?['fullName'] ?? 'Tanpa Nama';
-      await FirebaseFirestore.instance.collection('posts').add({
-        'image': _base64Image,
-        'description': _descriptionController.text,
-        'createdAt': now,
-        'latitude': _latitude,
-        'longitude': _longitude,
-        'fullName': fullName,
-        // 'aiCategory': _aiCategory,
-        'userId': uid, //optional
-      });
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      debugPrint('Gagal menyimpan postingan: $e');
-      if (!mounted) return;
-      setState(() => _isUploading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal mengunggah postingan.')));
-    }
+  Widget _buildShimmerEffect() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[400]!),
+        ),
+      ),
+    );
   }
 
   @override
@@ -263,7 +311,6 @@ class _AddPostScreenState extends State<AddPostScreen> {
     return Scaffold(
       appBar: AppBar(title: Text('Add Post')),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -296,22 +343,24 @@ class _AddPostScreenState extends State<AddPostScreen> {
               ),
             ),
             SizedBox(height: 24),
-            TextField(
-              controller: _descriptionController,
-              textCapitalization: TextCapitalization.sentences,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: 'Add a brief description...',
-                border: OutlineInputBorder(),
-              ),
-            ),
+            _isGenerating
+                ? _buildShimmerEffect()
+                : TextField(
+                  controller: _descriptionController,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    hintText: 'Add a brief description...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
             SizedBox(height: 24),
             _isUploading
-                ? CircularProgressIndicator()
+                ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton.icon(
-                  onPressed: _SubmitPost,
+                  onPressed: _submitPost,
                   icon: Icon(Icons.upload),
-                  label: Text('Post'),
+                  label: Text('Posting'),
                 ),
           ],
         ),
